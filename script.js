@@ -1,6 +1,7 @@
 const axios = require("axios");
 require("dotenv").config();
 const { WebhookClient, EmbedBuilder } = require("discord.js");
+const fs = require("fs");
 
 const webhookClient = new WebhookClient({
   url: process.env.DISCORD_WEBHOOK_URL,
@@ -20,8 +21,13 @@ const checkStock = async () => {
       if (!allItems[product.id]) {
         allItems[product.id] = product.variants[0].available;
         sendProductUpdate(product, "New Product");
+      } else if (product.variants[0].available && !allItems[product]) {
+        allItems[product.id] = product.variants[0].available;
+        sendProductUpdate(product, "In Stock");
+      } else if (!product.variants[0].available && allItems[product]) {
+        allItems[product.id] = product.variants[0].available;
+        sendProductUpdate(product, "Out of Stock");
       }
-      else if()
     }
   } catch (err) {
     console.log(err);
@@ -45,12 +51,12 @@ const sendProductUpdate = (productInfo, status) => {
       { name: "Status", value: "New Product", inline: false },
       {
         name: "Price",
-        value: `${productInfo.variants[0]?.price || "N/A"}`, 
+        value: `${productInfo.variants[0]?.price || "N/A"}`,
         inline: true,
       },
       {
         name: "SKU",
-        value: `${productInfo.variants[0]?.sku || "N/A"}`, 
+        value: `${productInfo.variants[0]?.sku || "N/A"}`,
         inline: true,
       },
       {
@@ -64,7 +70,7 @@ const sendProductUpdate = (productInfo, status) => {
   webhookClient
     .send({
       username: "Captain Hook",
-      avatarURL: "https://your-avatar-url.com/avatar.png", 
+      avatarURL: "https://your-avatar-url.com/avatar.png",
       embeds: [embed],
     })
     .catch((error) => {
