@@ -9,8 +9,9 @@ const webhookClient = new WebhookClient({
 
 const URL = "https://store.taylorswift.com/";
 
-const allItems = {};
+let allItems = {};
 
+// Function to check stock
 const checkStock = async () => {
   try {
     const response = await axios.get(URL + "/products.json?limit=250");
@@ -21,19 +22,23 @@ const checkStock = async () => {
       if (!allItems[product.id]) {
         allItems[product.id] = product.variants[0].available;
         sendProductUpdate(product, "New Product");
-      } else if (product.variants[0].available && !allItems[product]) {
+      } else if (product.variants[0].available && !allItems[product.id]) {
         allItems[product.id] = product.variants[0].available;
         sendProductUpdate(product, "In Stock");
-      } else if (!product.variants[0].available && allItems[product]) {
+      } else if (!product.variants[0].available && allItems[product.id]) {
         allItems[product.id] = product.variants[0].available;
         sendProductUpdate(product, "Out of Stock");
       }
     }
   } catch (err) {
     console.log(err);
+  } finally {
+    // Schedule the next check only after this one is complete
+    setTimeout(checkStock, 15000);
   }
 };
 
+// Function to send updates to Discord
 const sendProductUpdate = (productInfo, status) => {
   const embed = new EmbedBuilder()
     .setColor("#1DB954")
@@ -45,10 +50,10 @@ const sendProductUpdate = (productInfo, status) => {
     .setTitle(productInfo.title || "Unknown Product Title")
     .setURL(`https://store.taylorswift.com/products/${productInfo.handle}`)
     .setThumbnail(
-      productInfo.images[0].src || "https://your-fallback-image-url.com"
+      productInfo.images[0]?.src || "https://your-fallback-image-url.com"
     )
     .addFields(
-      { name: "Status", value: "New Product", inline: false },
+      { name: "Status", value: status, inline: false },
       {
         name: "Price",
         value: `${productInfo.variants[0]?.price || "N/A"}`,
@@ -78,5 +83,5 @@ const sendProductUpdate = (productInfo, status) => {
     });
 };
 
+// Start the first check
 checkStock();
-setInterval(checkStock, 60000);
