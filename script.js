@@ -8,7 +8,7 @@ const webhookClient = new WebhookClient({
 
 const URL = "https://store.taylorswift.com/";
 
-const outOfStock = {};
+const allItems = {};
 
 const checkStock = async () => {
   try {
@@ -17,44 +17,40 @@ const checkStock = async () => {
 
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
-      const imageURL = product.images[0]?.src || null; // Use null if no image
-
-      sendProductUpdate(product, imageURL);
-
-      if (!(product.title in outOfStock)) {
-        continue;
+      if (!allItems[product.id]) {
+        allItems[product.id] = product.variants[0].available;
+        sendProductUpdate(product, "New Product");
       }
-
-      if (product.variants[0].available === false) {
-        outOfStock[product.title] = product.available;
-      }
+      else if()
     }
   } catch (err) {
     console.log(err);
   }
 };
 
-const sendProductUpdate = (productInfo, imageURL = null) => {
+const sendProductUpdate = (productInfo, status) => {
   const embed = new EmbedBuilder()
-    .setColor("#1DB954") // Spotify's green color
+    .setColor("#1DB954")
     .setAuthor({
       name: `${URL}`,
       iconURL:
         "https://cdn.shopify.com/shopifycloud/brochure/assets/brand-assets/shopify-logo-shopping-bag-full-color-66166b2e55d67988b56b4bd28b63c271e2b9713358cb723070a92bde17ad7d63.svg",
     })
-    .setTitle(productInfo.title || "Unknown Product Title") // Fallback if title is null
-    .setURL(productInfo.url || "https://store.taylorswift.com") // Fallback if URL is null
-    .setThumbnail(imageURL || "https://your-fallback-image-url.com") // Fallback image if null
+    .setTitle(productInfo.title || "Unknown Product Title")
+    .setURL(`https://store.taylorswift.com/products/${productInfo.handle}`)
+    .setThumbnail(
+      productInfo.images[0].src || "https://your-fallback-image-url.com"
+    )
     .addFields(
       { name: "Status", value: "New Product", inline: false },
       {
         name: "Price",
-        value: `${productInfo.variants[0]?.price || "N/A"}`, // Fallback if price is null
+        value: `${productInfo.variants[0]?.price || "N/A"}`, 
         inline: true,
       },
       {
         name: "SKU",
-        value: `${productInfo.variants[0]?.sku || "N/A"}`, // Fallback if SKU is null
+        value: `${productInfo.variants[0]?.sku || "N/A"}`, 
         inline: true,
       },
       {
@@ -67,8 +63,8 @@ const sendProductUpdate = (productInfo, imageURL = null) => {
 
   webhookClient
     .send({
-      username: "Captain Hook", // Name to display
-      avatarURL: "https://your-avatar-url.com/avatar.png", // Replace with the actual URL to the avatar image
+      username: "Captain Hook",
+      avatarURL: "https://your-avatar-url.com/avatar.png", 
       embeds: [embed],
     })
     .catch((error) => {
@@ -77,4 +73,4 @@ const sendProductUpdate = (productInfo, imageURL = null) => {
 };
 
 checkStock();
-setInterval(checkStock, 60000); // Check stock every 60 seconds
+setInterval(checkStock, 60000);
